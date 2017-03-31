@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="Excel module" default="build" basedir=".">
 
-    <property file="./build.properties" />
+<project name="Excel module" default="build" basedir=".">
 
     <path id="project.classpath">
         <pathelement path="${play.path}/framework/classes"/>
         <fileset dir="${play.path}/framework/lib">
-                <include name="*.jar"/>
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="${play.path}/framework">
+            <include name="*.jar"/>
         </fileset>
         <fileset dir="lib">
             <include name="*.jar"/>
         </fileset>
-        <pathelement path="tmp/appclasses"/>
     </path>
 
     <target name="build" depends="compile">
@@ -20,14 +21,13 @@
             <fileset dir="src">
                 <include name="**/*.properties"/>
                 <include name="**/*.xml"/>
-                <include name="**/*.html"/>
                 <include name="**/play.plugins"/>
                 <include name="**/play.static"/>
             </fileset>
         </copy>
         <jar destfile="lib/play-excel.jar" basedir="tmp/classes">
             <manifest>
-                <section name="Play">
+                <section name="Play-module">
                     <attribute name="Specification-Title" value="Excel module"/>
                 </section>
             </manifest>
@@ -37,9 +37,9 @@
 
     <target name="compile">
         <mkdir dir="tmp/classes" />
-        <javac srcdir="src" destdir="tmp/classes" target="1.5" debug="true">
+        <javac srcdir="src" destdir="tmp/classes" target="1.7" debug="true">
             <classpath refid="project.classpath" />
         </javac>
     </target>
-    
+
 </project>
