@@ -6,3 +6,5 @@ dist/
 /eclipse/
 /.settings/
 /.DS_Store
+/lib/
+/tmp/
