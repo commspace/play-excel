@@ -18,7 +18,7 @@ import play.vfs.VirtualFile;
 import java.util.List;
 
 /**
- * ExcelFormat extends PlayFramework Sessoin.format according to http accept
+ * ExcelFormat extends PlayFramework Session.format according to http accept
  * header
  *
  * @author luog
