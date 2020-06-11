@@ -3,13 +3,10 @@ package play.modules.excel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Map;
-import java.util.List;
 
-import net.sf.jxls.transformer.XLSTransformer;
-
-import org.apache.poi.ss.usermodel.Workbook;
+import org.jxls.common.Context;
+import org.jxls.util.JxlsHelper;
 
 import play.Logger;
 import play.Play;
@@ -21,7 +18,6 @@ import play.mvc.Http.Response;
 import play.mvc.Scope.RenderArgs;
 import play.mvc.results.Result;
 import play.vfs.VirtualFile;
-import play.db.Model;
 
 /**
  * 200 OK with application/excel
@@ -111,10 +107,11 @@ public class RenderExcel extends Result {
                 if (null == tmplRoot) {
                     initTmplRoot();
                 }
-                InputStream is = tmplRoot.child(templateName).inputstream();
-                Workbook workbook = getWorkBook(RenderArgs.current().data);
-                workbook.write(response.out);
-                is.close();
+                
+                try(InputStream is = tmplRoot.child(templateName).inputstream()) {
+                    JxlsHelper.getInstance().processTemplate(is, response.out, new Context(beans));
+                }
+                
                 Logger.debug("Excel sync render takes %sms", System.currentTimeMillis() - start);
             } catch (Exception e) {
                 throw new UnexpectedException(e);
@@ -131,55 +128,59 @@ public class RenderExcel extends Result {
 
     private byte[] excel = null;
 
-    private Workbook getWorkBook(Map<String, Object> renderArgs) throws Exception {
-        InputStream is = tmplRoot.child(templateName).inputstream();
-        Workbook workbook = null;
-        RenderArgs ra = new RenderArgs();
-        ra.data = renderArgs;
-        if (renderArgs.containsKey(RA_DYNAMIC_OBJECTS)) {
-            // dynamic worksheet generation
-            // see http://jxls.sourceforge.net/reference/dynamicsheets.html
-            List objects = ra.get(RA_DYNAMIC_OBJECTS, List.class);
-            List sheetNames = ra.get(RA_DYNAMIC_SHEET_NAMES, List.class);
-            Integer sheetStart = ra.get(RA_DYNAMIC_SHEET_START, Integer.class);
-            if (null == sheetStart) sheetStart = 0;
-            String beanName = ra.get(RA_DYNAMIC_BEAN_NAME, String.class);
-            if (null == sheetNames) {
-                // try to generate sheetNames
-                sheetNames = new ArrayList();
-                String prefix = ra.get(RA_DYNAMIC_SHEET_NAME_PREFIX, String.class);
-                String suffix = ra.get(RA_DYNAMIC_SHEET_NAME_SUFFIX, String.class);
-                int i = 0;
-                for (Object o: objects) {
-                    StringBuilder name = new StringBuilder();
-                    if (o instanceof Model) {
-                        Model m = (Model) o;
-                        name.append(prefix).append(m._key()).append(suffix);
-                    } else {
-                        name.append(null == prefix ? "sheet" : prefix).append(i).append(suffix);
-                    }
-                    sheetNames.add(name.toString());
-                    if (null == beanName) beanName = o.getClass().getSimpleName().toLowerCase();
-                }
-                return new XLSTransformer().transformMultipleSheetsList(is, objects, sheetNames, beanName, renderArgs, sheetStart);
-            }
-        } else {
-            workbook = new XLSTransformer().transformXLS(is, beans);
-        }
-        return workbook;
-    }
+    // TODO Need to refactor the below to support dynamic worksheet and object support using JXLS 2.0 syntax
+    
+//    private Workbook getWorkBook(Map<String, Object> renderArgs) throws Exception {
+//        InputStream is = tmplRoot.child(templateName).inputstream();
+//        Workbook workbook = null;
+//        RenderArgs ra = new RenderArgs();
+//        ra.data = renderArgs;
+//        if (renderArgs.containsKey(RA_DYNAMIC_OBJECTS)) {
+//            // dynamic worksheet generation
+//            // see http://jxls.sourceforge.net/reference/dynamicsheets.html
+//            List objects = ra.get(RA_DYNAMIC_OBJECTS, List.class);
+//            List sheetNames = ra.get(RA_DYNAMIC_SHEET_NAMES, List.class);
+//            Integer sheetStart = ra.get(RA_DYNAMIC_SHEET_START, Integer.class);
+//            if (null == sheetStart) sheetStart = 0;
+//            String beanName = ra.get(RA_DYNAMIC_BEAN_NAME, String.class);
+//            if (null == sheetNames) {
+//                // try to generate sheetNames
+//                sheetNames = new ArrayList();
+//                String prefix = ra.get(RA_DYNAMIC_SHEET_NAME_PREFIX, String.class);
+//                String suffix = ra.get(RA_DYNAMIC_SHEET_NAME_SUFFIX, String.class);
+//                int i = 0;
+//                for (Object o: objects) {
+//                    StringBuilder name = new StringBuilder();
+//                    if (o instanceof Model) {
+//                        Model m = (Model) o;
+//                        name.append(prefix).append(m._key()).append(suffix);
+//                    } else {
+//                        name.append(null == prefix ? "sheet" : prefix).append(i).append(suffix);
+//                    }
+//                    sheetNames.add(name.toString());
+//                    if (null == beanName) beanName = o.getClass().getSimpleName().toLowerCase();
+//                }
+//                return new XLSTransformer().transformMultipleSheetsList(is, objects, sheetNames, beanName, renderArgs, sheetStart);
+//            }
+//        } else {
+//            workbook = new XLSTransformer().transformXLS(is, beans);
+//        }
+//        return workbook;
+//    }
 
     public void preRender() {
         try {
             if (null == tmplRoot) {
                 initTmplRoot();
             }
-            InputStream is = tmplRoot.child(templateName).inputstream();
-            Workbook workbook = getWorkBook(beans);
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            workbook.write(os);
-            excel = os.toByteArray();
-            is.close();
+            
+            try(InputStream is = tmplRoot.child(templateName).inputstream()) {
+                try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+                    JxlsHelper.getInstance().processTemplate(is, os, new Context(beans));
+                    excel = os.toByteArray();
+                }
+            }
+            
         } catch (Exception e) {
             throw new UnexpectedException(e);
         }
@@ -190,9 +191,9 @@ public class RenderExcel extends Result {
         return new Job<RenderExcel>(){
             @Override
             public RenderExcel doJobWithResult() throws Exception {
-                RenderExcel excel = new RenderExcel(templateName, beans, fn);
-                excel.preRender();
-                return excel;
+                RenderExcel renderExcel = new RenderExcel(templateName, beans, fn);
+                renderExcel.preRender();
+                return renderExcel;
             }
         }.now();
     }
