@@ -1,4 +1,10 @@
 .classpath
 .project
+bin
 build.bat
 dist/
+/eclipse/
+/.settings/
+/.DS_Store
+/lib/
+/tmp/
