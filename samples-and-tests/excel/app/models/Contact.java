@@ -7,6 +7,10 @@ import play.jobs.Job;
 import play.jobs.OnApplicationStart;
 import play.test.Fixtures;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Date;
+
 @Entity
 public class Contact extends Model {
 
@@ -18,10 +22,10 @@ public class Contact extends Model {
     public String address;
     public String mobile;
     public String email;
+    public BigDecimal amount;
+    public Date birthday;
 
     public String toString() {
-        // Contact c = Contact.find("").first();
-        // c = Contact.findById(c);
         return title + " " + firstName + " " + lastName;
     }
 

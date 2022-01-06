@@ -7,6 +7,8 @@ Contact(c1):
     mobile: +61-0404000000
     title: Mr.
     email: bkite@x.com
+    amount: 26899999999.2009999
+    birthday: 2000-01-01 12:00:00
     
 Contact(c2):
     firstName: Nuke
@@ -15,4 +17,6 @@ Contact(c2):
     mobile: +61-0404000001
     title: Ms.
     email: nbango@y.com
+    amount: 89999999.9909
+    birthday: 2000-01-01 12:00:00
     
