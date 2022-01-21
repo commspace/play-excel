@@ -3,6 +3,8 @@ package play.modules.excel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.jxls.common.Context;
@@ -36,12 +38,27 @@ public class RenderExcel extends Result {
     public static final String RA_DYNAMIC_SHEET_NAME_PREFIX = "__EXCEL_DYNAMIC_SHEET_NAME_PREFIX__";
     public static final String RA_DYNAMIC_SHEET_NAME_SUFFIX = "__EXCEL_DYNAMIC_SHEET_NAME_SUFFIX__";
     public static final String RA_DYNAMIC_BEAN_NAME = "__EXCEL_DYNAMIC_BEAN_NAME__";
+    public static final String RA_DYNAMIC_COLUMNS = "__EXCEL_DYNAMIC_COLUMNS__";
+    public static final String RA_DYNAMIC_HEADERS = "__EXCEL_DYNAMIC_HEADERS__";
+    public static final String RA_DYNAMIC_PROPERTY_NAMES = "__EXCEL_DYNAMIC_PROPERTY_NAMES__";
     public static final String CONF_ASYNC = "excel.async";
+    public static final String RA_DEFAULT_GENERATED_SHEET_NAME = "Export";
+    public static final String RA_DEFAULT_GENERATED_STARTING_CELL_ADDRESS = "A1";
+    public static final String RA_GENERATED_SHEET_NAME = "__EXCEL_GENERATED_SHEET_NAME__";
+    public static final String RA_GENERATED_STARTING_CELL_ADDRESS = "__EXCEL_GENERATED_STARTING_CELL_ADDRESS__";
+    public static final String RA_FORMAT_CELLS = "__EXCEL_FORMAT_CELLS__";
+
 
     private static VirtualFile tmplRoot = null;
     String templateName = null;
     String fileName = null; // recommended report file name
     Map<String, Object> beans = null;
+    String propertyNames = null;
+    List<Object> headers = null;
+    boolean dynamicColumns = false;
+    String generatedSheetName;
+    String generatedStartingCellAddress;
+    String formatCells;
 
     private static void initTmplRoot() {
         VirtualFile appRoot = VirtualFile.open(Play.applicationPath);
@@ -61,6 +78,28 @@ public class RenderExcel extends Result {
         this.beans = beans;
         this.fileName = fileName == null ? fileName_(templateName) : fileName;
     }
+
+    public RenderExcel(String templateName,
+                       Map<String, Object> beans,
+                       String fileName,
+                       List<Object> headers,
+                       String propertyNames,
+                       String generatedSheetName,
+                       String generatedStartingCellAddress,
+                       String formatCells) {
+        this.templateName = templateName;
+        this.beans = beans;
+        this.fileName = fileName == null ? fileName_(templateName) : fileName;
+        this.headers = headers;
+        this.propertyNames = propertyNames;
+        this.dynamicColumns = true;
+        this.formatCells = formatCells;
+        if(generatedSheetName == null || generatedSheetName.isEmpty())
+            this.generatedSheetName = RA_DEFAULT_GENERATED_SHEET_NAME;
+        if(generatedStartingCellAddress==null || generatedStartingCellAddress.isEmpty())
+            this.generatedStartingCellAddress = RA_DEFAULT_GENERATED_STARTING_CELL_ADDRESS;
+    }
+
 
     public String getFileName() {
         return fileName;
@@ -176,7 +215,17 @@ public class RenderExcel extends Result {
             
             try(InputStream is = tmplRoot.child(templateName).inputstream()) {
                 try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-                    JxlsHelper.getInstance().processTemplate(is, os, new Context(beans));
+
+                    if(this.dynamicColumns){
+                        String propertyNames = this.propertyNames;
+                        Context context = new Context();
+                        context.putVar("headers", this.headers);
+                        context.putVar("data", beans.get("data"));
+                        JxlsHelper.getInstance().processGridTemplateAtCell(is, os, context, propertyNames, this.generatedSheetName + "!" + this.generatedStartingCellAddress);
+
+                    }else {
+                        JxlsHelper.getInstance().processTemplate(is, os, new Context(beans));
+                    }
                     excel = os.toByteArray();
                 }
             }
@@ -188,10 +237,22 @@ public class RenderExcel extends Result {
 
     public static Promise<RenderExcel> renderAsync(final String templateName, final Map<String, Object> beans, final String fileName) {
         final String fn = fileName == null ? fileName_(templateName) : fileName;
+        final List<Object> headers = (List<Object>)beans.get(RA_DYNAMIC_HEADERS);
+        final String propertyNames = (String)beans.get(RA_DYNAMIC_PROPERTY_NAMES);
+        final boolean dynamicColumns = (boolean) beans.get(RA_DYNAMIC_COLUMNS);
+        final String generatedSheetName = (String) beans.get(RA_GENERATED_SHEET_NAME);
+        final String generatedStartingCellAddress = (String)beans.get(RA_GENERATED_STARTING_CELL_ADDRESS);
+        final String formatCells = (String)beans.get(RA_FORMAT_CELLS);
+
         return new Job<RenderExcel>(){
             @Override
             public RenderExcel doJobWithResult() throws Exception {
-                RenderExcel renderExcel = new RenderExcel(templateName, beans, fn);
+                RenderExcel renderExcel = null;
+                if(dynamicColumns) {
+                    renderExcel = new RenderExcel(templateName, beans, fn, headers, propertyNames, generatedSheetName, generatedStartingCellAddress, formatCells);
+                }else{
+                    renderExcel = new RenderExcel(templateName, beans, fn);
+                }
                 renderExcel.preRender();
                 return renderExcel;
             }

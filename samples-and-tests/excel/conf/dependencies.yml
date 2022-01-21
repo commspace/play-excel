@@ -1,2 +1,16 @@
 require:
-    - play -> excel trunk
+    - commspace -> play-excel latest.integration
+    #- commspace -> play-excel 2.0.1
+
+
+
+# My custom repositories
+repositories:
+    - commspace-modules:
+          type: chain
+          using:
+              - localModules:
+                    type: local
+                    artifact: "${application.path}/../../../[module]"
+          contains:
+              - commspace -> *

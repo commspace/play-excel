@@ -8,10 +8,12 @@
 # 1.2    - support play 1.2
 #        - Transparent Excel Render, deprecate renderExcel(...)
 # 1.0    - initial version
-self: play -> play-excel 2.0.1
+self: play -> play-excel 2.0.2
 
 require:
     - play
+    - org.jxls -> jxls-jexcel 1.0.7
+    - org.jxls -> jxls-reader 2.0.3
     - org.jxls -> jxls 2.8.1:
         transitive: false
     - org.jxls -> jxls-poi 2.8.1:
