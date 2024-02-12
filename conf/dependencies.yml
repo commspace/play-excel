@@ -12,22 +12,31 @@ self: play -> play-excel 3.0.3
 
 require:
     - play
-    - org.jxls -> jxls-jexcel 1.0.7:
-          transitive: false
+    - org.jxls -> jxls-jexcel 1.0.9:
+        transitive: false
     #- net.sourceforge.jexcelapi -> jxl 2.6.12:
-    #      transitive: false
-    - org.jxls -> jxls-reader 2.0.3:
-          transitive: false
+    #    transitive: false
+    - org.jxls -> jxls-reader 2.1.0:
+        transitive: false
     - org.apache.commons -> commons-digester3 3.2:
-          exclude:
-            - commons-logging -> commons-logging
-    - org.jxls -> jxls 2.8.1:
+        exclude:
+          - commons-logging -> commons-logging
+    - org.jxls -> jxls 2.14.0:
         transitive: false
-    - org.jxls -> jxls-poi 2.8.1:
+    - org.jxls -> jxls-poi 2.14.0:
         transitive: false
-    - org.apache.commons -> commons-jexl 2.0.1:
+    #- org.apache.commons -> commons-jexl 2.0.1:
+    #    transitive: false
+    - org.apache.commons -> commons-jexl3 3.2:
         transitive: false
-    - org.apache.commons -> commons-jexl3 3.1:
-          transitive: false
-    - org.apache.xmlbeans -> xmlbeans 3.1.0:
+    #- org.apache.poi -> poi 5.2.3:
+    #    force: true
+    #    transitive: false
+    #- org.apache.poi -> poi-ooxml 5.2.3:
+    #    force: true
+    #    transitive: false
+    #- org.apache.poi -> poi-ooxml-schemas 4.1.2:
+    #    force: true
+    #    transitive: false
+    - org.apache.xmlbeans -> xmlbeans 5.2.0:
         transitive: false
